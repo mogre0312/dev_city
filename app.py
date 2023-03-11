@@ -61,7 +61,7 @@ def register():
 @app.route('/add_profile', methods=['POST'])
 def add_profile():
     payload = request.json
-    user = payload.get('user','')
+    user_id = payload.get('user_id','')
     first_name = payload.get('firstname','')
     last_name = payload.get('lastname','')
     email = payload.get('email','')
@@ -69,8 +69,8 @@ def add_profile():
     exp = payload.get('exp','')
     skills = payload.get('skills','')
     
-    user = User(
-        user = username, 
+    user = Profile(
+        user_id = user_id, 
         first_name = first_name,
         last_name = last_name,
         email = email,
