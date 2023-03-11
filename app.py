@@ -58,7 +58,7 @@ def register():
     db.session.commit()
     return 'user is created'
     
-@app.route('/add_profile', methods=['POST'])
+@app.route('/add_newprofile', methods=['POST'])
 def add_profile():
     payload = request.json
     user_id = payload.get('user_id','')
@@ -83,16 +83,26 @@ def add_profile():
     db.session.commit()
     return 'profile is created'
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+@app.route('/show_all_profile', methods=['GET'])
+def show_all_profile():
+    profiles = db.session.execute(db.select(Profile)).scalars()
+    print(profiles)
+    return 'test'
+
+@app.route('/update_profile/<int:id>', methods=['PUT','PATCH'])
+def update_profile(id):
+    payload = request.json
+    email = payload.get('email','')
+    phone = payload.get('phone','')
+    exp = payload.get('exp','')
+    skills = payload.get('skills','')
+    profile = db.session.execute(db.select(Profile).filter_by(id=id)).scalar_one()
+    profile.exp = exp
+    profile.email = email
+    profile.phone = phone
+    profile.skills = skills
+    db.session.commit()
+    return 'profile updated'  
 
 if __name__ == 'main':
     app.run(debug=True)
