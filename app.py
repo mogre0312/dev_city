@@ -1,6 +1,7 @@
-from flask import Flask
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+import bcrypt
 
 db = SQLAlchemy()
 app = Flask(__name__)
@@ -36,6 +37,61 @@ class Profile(db.Model):
     
 with app.app_context():
     db.create_all()
+    
+
+@app.route('/register', methods=['POST'])
+def register():
+    payload = request.json
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(payload.get('password').encode(), salt)
+    username = payload.get('username', '')
+    role = payload.get('role','user')
+    if len(username) > 50:
+        return 'username is too long'
+    
+    user = User(
+        username = username, 
+        password = hashed,
+        role = role
+    )
+    db.session.add(user)
+    db.session.commit()
+    return 'user is created'
+    
+@app.route('/add_profile', methods=['POST'])
+def add_profile():
+    payload = request.json
+    user = payload.get('user','')
+    first_name = payload.get('firstname','')
+    last_name = payload.get('lastname','')
+    email = payload.get('email','')
+    phone = payload.get('phone','')
+    exp = payload.get('exp','')
+    skills = payload.get('skills','')
+    
+    user = User(
+        user = username, 
+        first_name = first_name,
+        last_name = last_name,
+        email = email,
+        phone = phone,
+        exp = exp,
+        skills = skills
+    )
+    
+    db.session.add(user)
+    db.session.commit()
+    return 'profile is created'
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
 
 if __name__ == 'main':
