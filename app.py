@@ -110,8 +110,7 @@ def update_profile(id):
     email = payload.get('email','')
     phone = payload.get('phone','')
     exp = payload.get('exp','')
-    skills = payload.get('skills','')
-    #profile = db.session.execute(db.select(Profile).filter_by(id=id)).first()
+    skills = payload.get('skills','')   
     profile= Profile.query.filter_by(id=id).first()
     
     if profile is not None:
@@ -123,6 +122,34 @@ def update_profile(id):
         return 'Profile updated'
     else:
         return 'Profile not found'
+    
+@app.route('/change_password/<int:id>', methods=['POST'])
+# 1. get user by id
+# 2. check if user exist then check pass
+# 3. if pass is incorrect then move forward
+# 4. if pass is correct then hashed the pass
+# 5. then save and commit
+def change_password(id):
+    payload = request.json
+    new_pass = payload.get('new_pass')
+    old_pass = payload.get('old_pass')
+    user = User.query.filter_by(id= id).first()
+    
+    if len(new_pass) < 5:
+        return 'Password is too short'
+    
+    if user is None:
+        return 'User not found'
+    
+    if not check_password_hash(user.password, old_pass):
+        return 'Old password is incorrect'
+    
+    hashed_pass = generate_password_hash(new_pass).decode("utf8")
+    user.password = hashed_pass
+    
+    db.session.commit()
+    
+    return 'password change successfully'
     
 
 if __name__ == 'main':
