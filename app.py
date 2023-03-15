@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_bcrypt import generate_password_hash, check_password_hash
+from random import randint
 
 db = SQLAlchemy()
 app = Flask(__name__)
@@ -23,7 +24,7 @@ class Profile(db.Model):
     __tablename__ = 'profile'
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    user = db.relationship("User", backref="user", uselist=False)
+    user = db.relationship("User", backref="owner", uselist=False)
     first_name = db.Column(db.String(50), nullable=False)
     last_name = db.Column(db.String(50), nullable=False)
     email = db.Column(db.String(50), unique=True)
@@ -34,6 +35,15 @@ class Profile(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     deleted_at = db.Column(db.DateTime,  nullable=True)
+    
+class Token(db.Model):
+    __tablename__='tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    user = db.relationship("User", backref="user", uselist=False)
+    token = db.Column(db.String(6), nullable = False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
 with app.app_context():
     db.create_all()
@@ -150,6 +160,58 @@ def change_password(id):
     db.session.commit()
     
     return 'password change successfully'
+
+@app.route('/forgot_password', methods=['GET','POST'])
+def forgot_password():
+    payload = request.json
+    username = payload.get('username')
+    user = User.query.filter_by(username= username).first()
+    
+    if user is None:
+        return 'User not found'
+    
+    otp = str(randint(1000, 9999))
+
+    token = Token(
+        user_id = user.id,
+        token = otp
+    )
+    
+    db.session.add(token)
+    db.session.commit()
+
+    return 'OTP was sent to your email'    
+    
+
+@app.route('/reset_password', methods=['POST'])
+def reset_password():
+    payload = request.json
+    new_pass = payload.get('new_pass')
+    username = payload.get('username')
+    otp = payload.get('otp')
+    user = User.query.filter_by(username= username).first()
+    
+    if len(new_pass) < 5:
+        return 'Password is too short'
+    
+    if user is None:
+        return 'User not found'
+    
+    db_token = Token.query.filter_by(user_id= user.id).first()
+    
+    if db_token is None:
+        return 'Token not found'
+    
+    if otp != db_token.token:
+        return 'OTP is incorrect'
+
+    hashed_pass = generate_password_hash(new_pass).decode("utf8")
+    user.password = hashed_pass
+    
+    db.session.commit()
+    
+    return 'Password reset successfully'
+
     
 
 if __name__ == 'main':
